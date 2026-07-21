@@ -1,0 +1,12 @@
+services:
+  - type: web
+    name: jim-bro-backend
+    runtime: node
+    plan: free
+    buildCommand: npm install
+    startCommand: npm run migrate && npm start
+    envVars:
+      - key: DATABASE_URL
+        sync: false
+      - key: JWT_SECRET
+        generateValue: true
