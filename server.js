@@ -2,6 +2,7 @@ require("dotenv").config();
 const express = require("express");
 const cors = require("cors");
 const authRoutes = require("./routes/auth");
+const workoutsRoutes = require("./routes/workouts");
 
 const app = express();
 app.set("trust proxy", 1);
@@ -11,6 +12,7 @@ app.use("/uploads", express.static("uploads"));
 
 app.get("/health", (req, res) => res.json({ ok: true }));
 app.use("/auth", authRoutes);
+app.use("/workouts", workoutsRoutes);
 
 const port = process.env.PORT || 3000;
 app.listen(port, () => console.log(`jim-bro-backend listening on :${port}`));

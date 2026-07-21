@@ -38,3 +38,18 @@ BEGIN
     ALTER TABLE users DROP COLUMN has_shoulder_issue;
   END IF;
 END $$;
+
+-- one row per local workout session, upserted by (user_id, local_id) every time a set is
+-- logged; local_id is the device's SQLite sessions.id, not globally unique on its own
+CREATE TABLE IF NOT EXISTS workout_logs (
+  id SERIAL PRIMARY KEY,
+  user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  local_id INTEGER NOT NULL,
+  date DATE NOT NULL,
+  split_name TEXT NOT NULL,
+  sets JSONB NOT NULL DEFAULT '[]'::jsonb,
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+  UNIQUE (user_id, local_id)
+);
+
+CREATE INDEX IF NOT EXISTS idx_workout_logs_user_date ON workout_logs (user_id, date DESC);
