@@ -10,6 +10,10 @@ const requireAuth = require("../middleware/auth");
 
 const router = express.Router();
 
+// pragmatic check, not full RFC 5322 — catches obviously malformed input,
+// actual deliverability can only be confirmed by sending a real email
+const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
 const authLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
   limit: 20,
@@ -57,6 +61,9 @@ router.post("/register", authLimiter, async (req, res) => {
 
   if (!email || !password || !name) {
     return res.status(400).json({ error: "email, password and name are required" });
+  }
+  if (!EMAIL_RE.test(email)) {
+    return res.status(400).json({ error: "enter a valid email address" });
   }
   if (password.length < 8) {
     return res.status(400).json({ error: "password must be at least 8 characters" });
