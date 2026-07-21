@@ -4,10 +4,19 @@ const jwt = require("jsonwebtoken");
 const multer = require("multer");
 const path = require("path");
 const fs = require("fs");
+const rateLimit = require("express-rate-limit");
 const pool = require("../db");
 const requireAuth = require("../middleware/auth");
 
 const router = express.Router();
+
+const authLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  limit: 20,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { error: "too many attempts, try again later" },
+});
 
 const USER_COLUMNS =
   "id, email, name, age, weight, height_cm, goal, has_spinal_issue, has_knee_issue, has_shoulder_issue, health_notes, avatar_url, created_at";
@@ -15,21 +24,24 @@ const USER_COLUMNS =
 const AVATAR_DIR = path.join(__dirname, "..", "uploads", "avatars");
 fs.mkdirSync(AVATAR_DIR, { recursive: true });
 
+const AVATAR_MIME_EXT = { "image/jpeg": ".jpg", "image/png": ".png", "image/webp": ".webp" };
+
 const avatarUpload = multer({
   storage: multer.diskStorage({
     destination: AVATAR_DIR,
-    filename: (req, file, cb) =>
-      cb(null, `${req.userId}-${Date.now()}${path.extname(file.originalname).toLowerCase()}`),
+    // extension comes from the validated mimetype, never the client-supplied
+    // filename, so an attacker can't smuggle a .html/.svg file onto the server
+    filename: (req, file, cb) => cb(null, `${req.userId}-${Date.now()}${AVATAR_MIME_EXT[file.mimetype]}`),
   }),
   limits: { fileSize: 5 * 1024 * 1024 },
-  fileFilter: (req, file, cb) => cb(null, /^image\/(jpe?g|png|webp)$/.test(file.mimetype)),
+  fileFilter: (req, file, cb) => cb(null, file.mimetype in AVATAR_MIME_EXT),
 });
 
 function signToken(userId) {
   return jwt.sign({ userId }, process.env.JWT_SECRET, { expiresIn: "30d" });
 }
 
-router.post("/register", async (req, res) => {
+router.post("/register", authLimiter, async (req, res) => {
   const {
     email,
     password,
@@ -84,7 +96,7 @@ router.post("/register", async (req, res) => {
   }
 });
 
-router.post("/login", async (req, res) => {
+router.post("/login", authLimiter, async (req, res) => {
   const { email, password } = req.body;
   if (!email || !password) {
     return res.status(400).json({ error: "email and password are required" });
