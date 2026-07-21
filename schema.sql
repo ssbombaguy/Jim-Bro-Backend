@@ -19,6 +19,8 @@ ALTER TABLE users ADD COLUMN IF NOT EXISTS avatar_url TEXT;
 
 ALTER TABLE users ADD COLUMN IF NOT EXISTS injuries JSONB NOT NULL DEFAULT '[]'::jsonb;
 
+ALTER TABLE users ADD COLUMN IF NOT EXISTS sex TEXT;
+
 -- one-time: fold the old fixed spinal/knee/shoulder flags into the injuries list, then drop them
 DO $$
 BEGIN

@@ -19,7 +19,7 @@ const authLimiter = rateLimit({
 });
 
 const USER_COLUMNS =
-  "id, email, name, age, weight, height_cm, goal, injuries, health_notes, avatar_url, created_at";
+  "id, email, name, age, weight, height_cm, goal, sex, injuries, health_notes, avatar_url, created_at";
 
 const AVATAR_DIR = path.join(__dirname, "..", "uploads", "avatars");
 fs.mkdirSync(AVATAR_DIR, { recursive: true });
@@ -50,6 +50,7 @@ router.post("/register", authLimiter, async (req, res) => {
     weight,
     heightCm,
     goal,
+    sex,
     injuries,
     healthNotes,
   } = req.body;
@@ -65,8 +66,8 @@ router.post("/register", authLimiter, async (req, res) => {
     const passwordHash = await bcrypt.hash(password, 10);
     const result = await pool.query(
       `INSERT INTO users
-        (email, password_hash, name, age, weight, height_cm, goal, injuries, health_notes)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+        (email, password_hash, name, age, weight, height_cm, goal, sex, injuries, health_notes)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
        RETURNING ${USER_COLUMNS}`,
       [
         email.toLowerCase().trim(),
@@ -76,6 +77,7 @@ router.post("/register", authLimiter, async (req, res) => {
         weight ?? null,
         heightCm ?? null,
         goal ?? null,
+        sex ?? null,
         JSON.stringify(Array.isArray(injuries) ? injuries : []),
         healthNotes ?? null,
       ]
