@@ -23,7 +23,7 @@ const authLimiter = rateLimit({
 });
 
 const USER_COLUMNS =
-  "id, email, name, age, weight, height_cm, goal, sex, injuries, health_notes, avatar_url, created_at";
+  "id, email, name, age, birth_date, weight, height_cm, goal, sex, injuries, health_notes, avatar_url, workouts_per_week, forbidden_exercises, created_at";
 
 const AVATAR_DIR = path.join(__dirname, "..", "uploads", "avatars");
 fs.mkdirSync(AVATAR_DIR, { recursive: true });
@@ -51,12 +51,15 @@ router.post("/register", authLimiter, async (req, res) => {
     password,
     name,
     age,
+    birthDate,
     weight,
     heightCm,
     goal,
     sex,
     injuries,
     healthNotes,
+    workoutsPerWeek,
+    forbiddenExercises,
   } = req.body;
 
   if (!email || !password || !name) {
@@ -73,20 +76,23 @@ router.post("/register", authLimiter, async (req, res) => {
     const passwordHash = await bcrypt.hash(password, 10);
     const result = await pool.query(
       `INSERT INTO users
-        (email, password_hash, name, age, weight, height_cm, goal, sex, injuries, health_notes)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
+        (email, password_hash, name, age, birth_date, weight, height_cm, goal, sex, injuries, health_notes, workouts_per_week, forbidden_exercises)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)
        RETURNING ${USER_COLUMNS}`,
       [
         email.toLowerCase().trim(),
         passwordHash,
         name,
         age ?? null,
+        birthDate ?? null,
         weight ?? null,
         heightCm ?? null,
         goal ?? null,
         sex ?? null,
         JSON.stringify(Array.isArray(injuries) ? injuries : []),
         healthNotes ?? null,
+        workoutsPerWeek ?? null,
+        JSON.stringify(Array.isArray(forbiddenExercises) ? forbiddenExercises : []),
       ]
     );
 
@@ -135,6 +141,55 @@ router.get("/me", requireAuth, async (req, res) => {
     const result = await pool.query(
       `SELECT ${USER_COLUMNS} FROM users WHERE id = $1`,
       [req.userId]
+    );
+    if (!result.rows[0]) return res.status(404).json({ error: "user not found" });
+    res.json({ user: result.rows[0] });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: "internal error" });
+  }
+});
+
+router.patch("/me", requireAuth, async (req, res) => {
+  const {
+    name,
+    age,
+    birthDate,
+    weight,
+    heightCm,
+    goal,
+    sex,
+    injuries,
+    healthNotes,
+    workoutsPerWeek,
+    forbiddenExercises,
+  } = req.body;
+
+  if (!name) {
+    return res.status(400).json({ error: "name is required" });
+  }
+
+  try {
+    const result = await pool.query(
+      `UPDATE users SET
+        name = $1, age = $2, birth_date = $3, weight = $4, height_cm = $5, goal = $6,
+        sex = $7, injuries = $8, health_notes = $9, workouts_per_week = $10, forbidden_exercises = $11
+       WHERE id = $12
+       RETURNING ${USER_COLUMNS}`,
+      [
+        name,
+        age ?? null,
+        birthDate ?? null,
+        weight ?? null,
+        heightCm ?? null,
+        goal ?? null,
+        sex ?? null,
+        JSON.stringify(Array.isArray(injuries) ? injuries : []),
+        healthNotes ?? null,
+        workoutsPerWeek ?? null,
+        JSON.stringify(Array.isArray(forbiddenExercises) ? forbiddenExercises : []),
+        req.userId,
+      ]
     );
     if (!result.rows[0]) return res.status(404).json({ error: "user not found" });
     res.json({ user: result.rows[0] });
