@@ -12,3 +12,5 @@ services:
         generateValue: true
       - key: SPOONACULAR_API_KEY
         sync: false
+      - key: CRON_SECRET
+        generateValue: true

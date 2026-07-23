@@ -1,0 +1,15 @@
+name: Check missed workouts
+
+on:
+  schedule:
+    - cron: "*/30 * * * *"
+  workflow_dispatch: {}
+
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Call missed-workout job endpoint
+        run: |
+          curl -sf -X POST "${{ secrets.BACKEND_URL }}/jobs/check-missed-workouts" \
+            -H "X-Cron-Secret: ${{ secrets.CRON_SECRET }}"

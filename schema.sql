@@ -80,3 +80,43 @@ CREATE TABLE IF NOT EXISTS meal_plans (
 );
 
 CREATE INDEX IF NOT EXISTS idx_meal_plans_user_date ON meal_plans (user_id, created_at DESC);
+
+-- IANA name (e.g. "Europe/Tbilisi"), sent by the client alongside its push token; the missed-
+-- workout job needs it to know what "today" and "the split's window has passed" mean locally
+ALTER TABLE users ADD COLUMN IF NOT EXISTS timezone TEXT NOT NULL DEFAULT 'UTC';
+
+-- one row per device; token is globally unique (not per-user) so re-registering it under a new
+-- account (device reinstall / account switch) moves ownership instead of pushing to both users
+CREATE TABLE IF NOT EXISTS push_tokens (
+  id SERIAL PRIMARY KEY,
+  user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  token TEXT UNIQUE NOT NULL,
+  platform TEXT,
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+-- mirrors workout_logs: splits (with their weekday schedule) only ever lived in the device's
+-- local SQLite before this, so the missed-workout job has nothing to compare against without a
+-- synced copy. Upserted by (user_id, local_id) same as workout_logs.
+CREATE TABLE IF NOT EXISTS splits (
+  id SERIAL PRIMARY KEY,
+  user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  local_id INTEGER NOT NULL,
+  name TEXT NOT NULL,
+  weekdays JSONB NOT NULL DEFAULT '[]'::jsonb,
+  default_time TEXT,
+  default_end_time TEXT,
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+  UNIQUE (user_id, local_id)
+);
+
+-- dedupes the missed-workout push per split per date so the periodic job never re-notifies for
+-- the same miss on a later run
+CREATE TABLE IF NOT EXISTS missed_workout_notifications (
+  id SERIAL PRIMARY KEY,
+  user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  split_id INTEGER NOT NULL REFERENCES splits(id) ON DELETE CASCADE,
+  date DATE NOT NULL,
+  sent_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+  UNIQUE (user_id, split_id, date)
+);
