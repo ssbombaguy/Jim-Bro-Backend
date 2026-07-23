@@ -34,6 +34,21 @@ router.post("/", requireAuth, async (req, res) => {
   }
 });
 
+router.delete("/:localId", requireAuth, async (req, res) => {
+  const localId = Number(req.params.localId);
+  if (!Number.isFinite(localId)) {
+    return res.status(400).json({ error: "localId must be a number" });
+  }
+
+  try {
+    await pool.query(`DELETE FROM workout_logs WHERE user_id = $1 AND local_id = $2`, [req.userId, localId]);
+    res.status(204).end();
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: "internal error" });
+  }
+});
+
 router.get("/", requireAuth, async (req, res) => {
   try {
     const result = await pool.query(
