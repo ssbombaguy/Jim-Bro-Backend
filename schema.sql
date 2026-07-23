@@ -59,3 +59,18 @@ CREATE TABLE IF NOT EXISTS workout_logs (
 );
 
 CREATE INDEX IF NOT EXISTS idx_workout_logs_user_date ON workout_logs (user_id, date DESC);
+
+-- one row per generated meal plan; kept server-side (not just AsyncStorage) so it survives a
+-- reinstall/device change and is queryable later (e.g. an AI coach reading past nutrition)
+CREATE TABLE IF NOT EXISTS meal_plans (
+  id SERIAL PRIMARY KEY,
+  user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  target_calories INTEGER,
+  target_protein INTEGER,
+  diet TEXT,
+  meals JSONB NOT NULL DEFAULT '[]'::jsonb,
+  nutrients JSONB NOT NULL DEFAULT '{}'::jsonb,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+CREATE INDEX IF NOT EXISTS idx_meal_plans_user_date ON meal_plans (user_id, created_at DESC);
