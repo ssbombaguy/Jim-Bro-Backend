@@ -27,6 +27,12 @@ ALTER TABLE users ADD COLUMN IF NOT EXISTS workouts_per_week INTEGER;
 
 ALTER TABLE users ADD COLUMN IF NOT EXISTS forbidden_exercises JSONB NOT NULL DEFAULT '[]'::jsonb;
 
+ALTER TABLE users ADD COLUMN IF NOT EXISTS favorite_exercises JSONB NOT NULL DEFAULT '[]'::jsonb;
+
+ALTER TABLE users ADD COLUMN IF NOT EXISTS favorite_meals JSONB NOT NULL DEFAULT '[]'::jsonb;
+
+ALTER TABLE users ADD COLUMN IF NOT EXISTS preferred_weekdays JSONB NOT NULL DEFAULT '[]'::jsonb;
+
 -- one-time: fold the old fixed spinal/knee/shoulder flags into the injuries list, then drop them
 DO $$
 BEGIN
