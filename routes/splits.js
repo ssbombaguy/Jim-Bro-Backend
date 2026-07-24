@@ -7,18 +7,18 @@ const router = express.Router();
 // best-effort mirror of a split's schedule, called from the same places gym.js already syncs
 // workouts — lets the missed-workout job know what's scheduled without touching the device
 router.post("/", requireAuth, async (req, res) => {
-  const { localId, name, weekdays, defaultTime, defaultEndTime } = req.body;
-  if (!Number.isFinite(localId) || !name) {
-    return res.status(400).json({ error: "localId and name are required" });
+  const { clientId, name, weekdays, defaultTime, defaultEndTime } = req.body;
+  if (!clientId || !name) {
+    return res.status(400).json({ error: "clientId and name are required" });
   }
 
   try {
     await pool.query(
-      `INSERT INTO splits (user_id, local_id, name, weekdays, default_time, default_end_time)
+      `INSERT INTO splits (user_id, client_id, name, weekdays, default_time, default_end_time)
        VALUES ($1, $2, $3, $4, $5, $6)
-       ON CONFLICT (user_id, local_id)
+       ON CONFLICT (user_id, client_id)
        DO UPDATE SET name = $3, weekdays = $4, default_time = $5, default_end_time = $6, updated_at = now()`,
-      [req.userId, localId, name, JSON.stringify(Array.isArray(weekdays) ? weekdays : []), defaultTime || null, defaultEndTime || null]
+      [req.userId, clientId, name, JSON.stringify(Array.isArray(weekdays) ? weekdays : []), defaultTime || null, defaultEndTime || null]
     );
     res.status(204).end();
   } catch (err) {
@@ -27,14 +27,14 @@ router.post("/", requireAuth, async (req, res) => {
   }
 });
 
-router.delete("/:localId", requireAuth, async (req, res) => {
-  const localId = Number(req.params.localId);
-  if (!Number.isFinite(localId)) {
-    return res.status(400).json({ error: "localId must be a number" });
+router.delete("/:clientId", requireAuth, async (req, res) => {
+  const { clientId } = req.params;
+  if (!clientId) {
+    return res.status(400).json({ error: "clientId is required" });
   }
 
   try {
-    await pool.query(`DELETE FROM splits WHERE user_id = $1 AND local_id = $2`, [req.userId, localId]);
+    await pool.query(`DELETE FROM splits WHERE user_id = $1 AND client_id = $2`, [req.userId, clientId]);
     res.status(204).end();
   } catch (err) {
     console.error(err);

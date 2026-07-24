@@ -12,20 +12,20 @@ function sanitizeSets(sets) {
 }
 
 router.post("/", requireAuth, async (req, res) => {
-  const { localId, date, splitName, sets } = req.body;
+  const { clientId, date, splitName, sets } = req.body;
 
-  if (!Number.isFinite(localId) || !date || !splitName) {
-    return res.status(400).json({ error: "localId, date and splitName are required" });
+  if (!clientId || !date || !splitName) {
+    return res.status(400).json({ error: "clientId, date and splitName are required" });
   }
 
   try {
     const result = await pool.query(
-      `INSERT INTO workout_logs (user_id, local_id, date, split_name, sets)
+      `INSERT INTO workout_logs (user_id, client_id, date, split_name, sets)
        VALUES ($1, $2, $3, $4, $5)
-       ON CONFLICT (user_id, local_id)
+       ON CONFLICT (user_id, client_id)
        DO UPDATE SET date = $3, split_name = $4, sets = $5, updated_at = now()
-       RETURNING id, local_id, date, split_name, sets, updated_at`,
-      [req.userId, localId, date, splitName, JSON.stringify(sanitizeSets(sets))]
+       RETURNING id, client_id, date, split_name, sets, updated_at`,
+      [req.userId, clientId, date, splitName, JSON.stringify(sanitizeSets(sets))]
     );
     res.status(201).json({ workout: result.rows[0] });
   } catch (err) {
@@ -34,14 +34,14 @@ router.post("/", requireAuth, async (req, res) => {
   }
 });
 
-router.delete("/:localId", requireAuth, async (req, res) => {
-  const localId = Number(req.params.localId);
-  if (!Number.isFinite(localId)) {
-    return res.status(400).json({ error: "localId must be a number" });
+router.delete("/:clientId", requireAuth, async (req, res) => {
+  const { clientId } = req.params;
+  if (!clientId) {
+    return res.status(400).json({ error: "clientId is required" });
   }
 
   try {
-    await pool.query(`DELETE FROM workout_logs WHERE user_id = $1 AND local_id = $2`, [req.userId, localId]);
+    await pool.query(`DELETE FROM workout_logs WHERE user_id = $1 AND client_id = $2`, [req.userId, clientId]);
     res.status(204).end();
   } catch (err) {
     console.error(err);
@@ -52,7 +52,7 @@ router.delete("/:localId", requireAuth, async (req, res) => {
 router.get("/", requireAuth, async (req, res) => {
   try {
     const result = await pool.query(
-      `SELECT id, local_id, date, split_name, sets, updated_at FROM workout_logs
+      `SELECT id, client_id, date, split_name, sets, updated_at FROM workout_logs
        WHERE user_id = $1 ORDER BY date DESC, id DESC LIMIT 100`,
       [req.userId]
     );

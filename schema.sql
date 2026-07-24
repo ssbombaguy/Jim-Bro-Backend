@@ -120,3 +120,33 @@ CREATE TABLE IF NOT EXISTS missed_workout_notifications (
   sent_at TIMESTAMPTZ NOT NULL DEFAULT now(),
   UNIQUE (user_id, split_id, date)
 );
+
+-- local_id was the device's SQLite autoincrement id — two devices signed into the same
+-- account both start counting from 1, so upserting on (user_id, local_id) let one device's
+-- workout silently overwrite another's. client_id is a UUID the device generates once, at
+-- row-creation time, so it's stable and collision-free across every device for that account.
+-- Backfilling from local_id preserves identity for rows synced before this column existed
+-- (each was created by exactly one device, so its local_id was unique for that account then).
+ALTER TABLE workout_logs ADD COLUMN IF NOT EXISTS client_id TEXT;
+UPDATE workout_logs SET client_id = local_id::text WHERE client_id IS NULL;
+ALTER TABLE workout_logs ALTER COLUMN client_id SET NOT NULL;
+ALTER TABLE workout_logs ALTER COLUMN local_id DROP NOT NULL;
+DO $$
+BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'workout_logs_user_id_client_id_key') THEN
+    ALTER TABLE workout_logs DROP CONSTRAINT IF EXISTS workout_logs_user_id_local_id_key;
+    ALTER TABLE workout_logs ADD CONSTRAINT workout_logs_user_id_client_id_key UNIQUE (user_id, client_id);
+  END IF;
+END $$;
+
+ALTER TABLE splits ADD COLUMN IF NOT EXISTS client_id TEXT;
+UPDATE splits SET client_id = local_id::text WHERE client_id IS NULL;
+ALTER TABLE splits ALTER COLUMN client_id SET NOT NULL;
+ALTER TABLE splits ALTER COLUMN local_id DROP NOT NULL;
+DO $$
+BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'splits_user_id_client_id_key') THEN
+    ALTER TABLE splits DROP CONSTRAINT IF EXISTS splits_user_id_local_id_key;
+    ALTER TABLE splits ADD CONSTRAINT splits_user_id_client_id_key UNIQUE (user_id, client_id);
+  END IF;
+END $$;
