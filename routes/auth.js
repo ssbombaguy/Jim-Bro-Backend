@@ -23,7 +23,7 @@ const authLimiter = rateLimit({
 });
 
 const USER_COLUMNS =
-  "id, email, name, age, birth_date, weight, height_cm, goal, sex, injuries, health_notes, avatar_url, workouts_per_week, forbidden_exercises, favorite_exercises, favorite_meals, preferred_weekdays, created_at";
+  "id, email, name, age, birth_date, weight, height_cm, goal, sex, injuries, health_notes, avatar_url, workouts_per_week, forbidden_exercises, favorite_exercises, favorite_meals, preferred_weekdays, plan, created_at";
 
 const AVATAR_DIR = path.join(__dirname, "..", "uploads", "avatars");
 fs.mkdirSync(AVATAR_DIR, { recursive: true });

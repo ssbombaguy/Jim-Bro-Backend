@@ -85,6 +85,12 @@ CREATE INDEX IF NOT EXISTS idx_meal_plans_user_date ON meal_plans (user_id, crea
 -- workout job needs it to know what "today" and "the split's window has passed" mean locally
 ALTER TABLE users ADD COLUMN IF NOT EXISTS timezone TEXT NOT NULL DEFAULT 'UTC';
 
+-- entitlement for premium features (currently just the AI weekly-plan generator). Server-
+-- controlled only: PATCH /auth/me never accepts this field from the client, so a user can't
+-- grant themselves premium by just including it in a profile update.
+ALTER TABLE users ADD COLUMN IF NOT EXISTS plan TEXT NOT NULL DEFAULT 'free';
+UPDATE users SET plan = 'premium' WHERE email = 'giorgimaisuradze2008@gmail.com';
+
 -- one row per device; token is globally unique (not per-user) so re-registering it under a new
 -- account (device reinstall / account switch) moves ownership instead of pushing to both users
 CREATE TABLE IF NOT EXISTS push_tokens (
