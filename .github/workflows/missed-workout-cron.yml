@@ -11,5 +11,6 @@ jobs:
     steps:
       - name: Call missed-workout job endpoint
         run: |
-          curl -sf -X POST "${{ secrets.BACKEND_URL }}/jobs/check-missed-workouts" \
-            -H "X-Cron-Secret: ${{ secrets.CRON_SECRET }}"
+          curl -sS -X POST "${{ secrets.BACKEND_URL }}/jobs/check-missed-workouts" \
+            -H "X-Cron-Secret: ${{ secrets.CRON_SECRET }}" \
+            -w "\nHTTP %{http_code}\n" -o /dev/stdout --fail-with-body
