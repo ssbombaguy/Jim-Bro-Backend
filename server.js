@@ -7,6 +7,7 @@ const nutritionRoutes = require("./routes/nutrition");
 const splitsRoutes = require("./routes/splits");
 const pushTokensRoutes = require("./routes/push-tokens");
 const jobsRoutes = require("./routes/jobs");
+const achievementsRoutes = require("./routes/achievements");
 
 const app = express();
 app.set("trust proxy", 1);
@@ -21,6 +22,7 @@ app.use("/nutrition", nutritionRoutes);
 app.use("/splits", splitsRoutes);
 app.use("/push-tokens", pushTokensRoutes);
 app.use("/jobs", jobsRoutes);
+app.use("/achievements", achievementsRoutes);
 
 const port = process.env.PORT || 3000;
 app.listen(port, () => console.log(`jim-bro-backend listening on :${port}`));

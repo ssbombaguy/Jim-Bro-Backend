@@ -1,0 +1,366 @@
+{
+    "version": "1.0.0",
+    "categories": [
+        "bodybuilding_and_lifting",
+        "swimming_and_aquatics",
+        "general_fitness_and_hybrid"
+    ],
+    "rarity_tiers": [
+        "Bronze",
+        "Silver",
+        "Gold",
+        "Legendary"
+    ],
+    "achievements": [
+        {
+            "id": "aint_nothin_but_a_peanut",
+            "category": "bodybuilding_and_lifting",
+            "title": "Ain't Nothin' But A Peanut!",
+            "inspired_by": "Ronnie Coleman",
+            "rarity": "Gold",
+            "description": "Move 10,000+ kg total volume in a single heavy lifting session.",
+            "icon_name": "icon_peanut_barbell",
+            "trigger_type": "single_workout_volume_kg",
+            "target_value": 10000,
+            "required_exercises": [
+                "any_lifting"
+            ]
+        },
+        {
+            "id": "king_of_heavy_iron",
+            "category": "bodybuilding_and_lifting",
+            "title": "King of Heavy Iron",
+            "inspired_by": "Ronnie Coleman",
+            "rarity": "Legendary",
+            "description": "Complete a Heavy Barbell Squat or Deadlift set of 5 reps at 2x bodyweight.",
+            "icon_name": "icon_crown_barbell",
+            "trigger_type": "exercise_relative_weight",
+            "target_value": 2.0,
+            "target_reps": 5,
+            "required_exercises": [
+                "Barbell Squat",
+                "Barbell Deadlift"
+            ]
+        },
+        {
+            "id": "austrian_oak",
+            "category": "bodybuilding_and_lifting",
+            "title": "The Austrian Oak",
+            "inspired_by": "Arnold Schwarzenegger",
+            "rarity": "Silver",
+            "description": "Log a complete chest workout featuring Bench Press, Incline Press, and Dumbbell Flyes.",
+            "icon_name": "icon_oak_chest",
+            "trigger_type": "exercise_combination",
+            "required_exercises": [
+                "Barbell Bench Press",
+                "Incline Dumbbell Press",
+                "Dumbbell Flyes"
+            ]
+        },
+        {
+            "id": "pumping_iron_master",
+            "category": "bodybuilding_and_lifting",
+            "title": "Pumping Iron Master",
+            "inspired_by": "Arnold Schwarzenegger",
+            "rarity": "Gold",
+            "description": "Complete and log 5 hypertrophy workouts in a single calendar week.",
+            "icon_name": "icon_trophy_dumbbell",
+            "trigger_type": "weekly_workout_count",
+            "target_value": 5
+        },
+        {
+            "id": "blood_and_guts",
+            "category": "bodybuilding_and_lifting",
+            "title": "Blood & Guts",
+            "inspired_by": "Dorian Yates",
+            "rarity": "Silver",
+            "description": "Log a set marked 'To Failure' (RPE 10) on Barbell Rows or Lat Pulldowns.",
+            "icon_name": "icon_fire_back",
+            "trigger_type": "set_rpe_10",
+            "required_exercises": [
+                "Barbell Row",
+                "Lat Pulldown"
+            ]
+        },
+        {
+            "id": "the_quadfather",
+            "category": "bodybuilding_and_lifting",
+            "title": "The Quadfather",
+            "inspired_by": "Tom Platz",
+            "rarity": "Gold",
+            "description": "Perform a set of Barbell Squats with 20+ continuous reps at 1.0x bodyweight.",
+            "icon_name": "icon_leg_quads",
+            "trigger_type": "squat_reps_at_bodyweight",
+            "target_value": 20,
+            "required_exercises": [
+                "Barbell Squat"
+            ]
+        },
+        {
+            "id": "half_ton_club",
+            "category": "bodybuilding_and_lifting",
+            "title": "Half-Ton Club",
+            "inspired_by": "Eddie Hall / Brian Shaw",
+            "rarity": "Legendary",
+            "description": "Hit a 500 lb (227 kg) single-rep Deadlift PR or reach 1,000 lbs across Bench, Squat, and Deadlift.",
+            "icon_name": "icon_anvil_weight",
+            "trigger_type": "deadlift_pr_kg_or_total",
+            "target_value": 227,
+            "required_exercises": [
+                "Barbell Deadlift"
+            ]
+        },
+        {
+            "id": "classic_physique",
+            "category": "bodybuilding_and_lifting",
+            "title": "Classic Physique",
+            "inspired_by": "Chris Bumstead",
+            "rarity": "Bronze",
+            "description": "Log an upper-body hypertrophy session with Incline Press, Lateral Raises, and Lat Pulldowns.",
+            "icon_name": "icon_sculpture_v_taper",
+            "trigger_type": "exercise_combination",
+            "required_exercises": [
+                "Incline Press",
+                "Lateral Raises",
+                "Lat Pulldowns"
+            ]
+        },
+        {
+            "id": "whatever_it_takes",
+            "category": "bodybuilding_and_lifting",
+            "title": "Whatever It Takes",
+            "inspired_by": "Rich Piana",
+            "rarity": "Silver",
+            "description": "Complete a dedicated arm day with 16 or more total working sets (Biceps + Triceps).",
+            "icon_name": "icon_bicep_flex",
+            "trigger_type": "arm_workout_set_count",
+            "target_value": 16
+        },
+        {
+            "id": "sardinian_powerhouse",
+            "category": "bodybuilding_and_lifting",
+            "title": "Sardinian Powerhouse",
+            "inspired_by": "Franco Columbu",
+            "rarity": "Gold",
+            "description": "Log a Bench Press PR equal to or greater than 1.5x your bodyweight.",
+            "icon_name": "icon_power_chest",
+            "trigger_type": "exercise_relative_weight",
+            "target_value": 1.5,
+            "required_exercises": [
+                "Barbell Bench Press"
+            ]
+        },
+        {
+            "id": "quad_stomp",
+            "category": "bodybuilding_and_lifting",
+            "title": "The Quad Stomp",
+            "inspired_by": "Jay Cutler",
+            "rarity": "Gold",
+            "description": "Log a Leg Day workout containing over 20 total working sets across Leg Press, Squats, and Lunge variations.",
+            "icon_name": "icon_stomp_legs",
+            "trigger_type": "leg_workout_set_count",
+            "target_value": 20
+        },
+        {
+            "id": "hybrid_beast",
+            "category": "bodybuilding_and_lifting",
+            "title": "Hybrid Beast",
+            "inspired_by": "Larry Wheels",
+            "rarity": "Legendary",
+            "description": "Hit new Personal Records on both Bench Press and Barbell Squat during the same workout session.",
+            "icon_name": "icon_dual_pr",
+            "trigger_type": "multiple_pr_single_workout",
+            "target_value": 2,
+            "required_exercises": [
+                "Barbell Bench Press",
+                "Barbell Squat"
+            ]
+        },
+        {
+            "id": "baltimore_bullet",
+            "category": "swimming_and_aquatics",
+            "title": "The Baltimore Bullet",
+            "inspired_by": "Michael Phelps",
+            "rarity": "Legendary",
+            "description": "Accumulate a total swim distance of 28,000 meters in your account history.",
+            "icon_name": "icon_swimmer_gold",
+            "trigger_type": "lifetime_swim_distance_meters",
+            "target_value": 28000
+        },
+        {
+            "id": "fly_king",
+            "category": "swimming_and_aquatics",
+            "title": "Fly King",
+            "inspired_by": "Michael Phelps",
+            "rarity": "Gold",
+            "description": "Swim 1,000 meters of total Butterfly Stroke across your workouts.",
+            "icon_name": "icon_butterfly_stroke",
+            "trigger_type": "stroke_cumulative_distance_meters",
+            "stroke_type": "butterfly",
+            "target_value": 1000
+        },
+        {
+            "id": "distance_monarch",
+            "category": "swimming_and_aquatics",
+            "title": "Distance Monarch",
+            "inspired_by": "Katie Ledecky",
+            "rarity": "Gold",
+            "description": "Complete a single continuous 1,500m Freestyle swim without long pauses.",
+            "icon_name": "icon_pool_lane_long",
+            "trigger_type": "single_swim_distance_meters",
+            "stroke_type": "freestyle",
+            "target_value": 1500
+        },
+        {
+            "id": "sub_25_sprint",
+            "category": "swimming_and_aquatics",
+            "title": "Sub-25 Sprint",
+            "inspired_by": "Caeleb Dressel",
+            "rarity": "Legendary",
+            "description": "Swim a 50m Freestyle or 50m Butterfly sprint in under 25 seconds.",
+            "icon_name": "icon_stopwatch_lightning",
+            "trigger_type": "time_pr_seconds",
+            "target_value": 25.0,
+            "distance_meters": 50
+        },
+        {
+            "id": "lightning_intervals",
+            "category": "swimming_and_aquatics",
+            "title": "Lightning Intervals",
+            "inspired_by": "Caeleb Dressel",
+            "rarity": "Silver",
+            "description": "Log 5 x 50m sprint interval sets with less than 30 seconds rest between intervals.",
+            "icon_name": "icon_interval_timer",
+            "trigger_type": "swim_interval_set",
+            "target_value": 5
+        },
+        {
+            "id": "the_thorpedo",
+            "category": "swimming_and_aquatics",
+            "title": "The Thorpedo",
+            "inspired_by": "Ian Thorpe",
+            "rarity": "Silver",
+            "description": "Complete a 400m Freestyle swim with consistent split pacing across all laps.",
+            "icon_name": "icon_torpedo_water",
+            "trigger_type": "single_swim_distance_meters",
+            "stroke_type": "freestyle",
+            "target_value": 400
+        },
+        {
+            "id": "medley_specialist",
+            "category": "swimming_and_aquatics",
+            "title": "Medley Specialist",
+            "inspired_by": "Ryan Lochte",
+            "rarity": "Bronze",
+            "description": "Complete a single swimming session that includes all four strokes (Butterfly, Backstroke, Breaststroke, Freestyle).",
+            "icon_name": "icon_medley_four",
+            "trigger_type": "all_four_strokes_in_session"
+        },
+        {
+            "id": "underwater_glider",
+            "category": "swimming_and_aquatics",
+            "title": "Underwater Glider",
+            "inspired_by": "Ryan Lochte",
+            "rarity": "Silver",
+            "description": "Log 500m total backstroke distance in a single workout with dedicated streamline kicks.",
+            "icon_name": "icon_backstroke_wave",
+            "trigger_type": "single_swim_stroke_distance",
+            "stroke_type": "backstroke",
+            "target_value": 500
+        },
+        {
+            "id": "breaststroke_master",
+            "category": "swimming_and_aquatics",
+            "title": "Breaststroke Master",
+            "inspired_by": "Adam Peaty",
+            "rarity": "Silver",
+            "description": "Swim 500 meters of Breaststroke in a single pool session.",
+            "icon_name": "icon_breaststroke_wave",
+            "trigger_type": "single_swim_stroke_distance",
+            "stroke_type": "breaststroke",
+            "target_value": 500
+        },
+        {
+            "id": "sprint_fly_demon",
+            "category": "swimming_and_aquatics",
+            "title": "Sprint Fly Demon",
+            "inspired_by": "Sarah Sjöström",
+            "rarity": "Silver",
+            "description": "Set a new 50m Butterfly Personal Record.",
+            "icon_name": "icon_fly_sprint",
+            "trigger_type": "time_pr",
+            "stroke_type": "butterfly",
+            "distance_meters": 50
+        },
+        {
+            "id": "endurance_titan",
+            "category": "swimming_and_aquatics",
+            "title": "Endurance Titan",
+            "inspired_by": "Sun Yang",
+            "rarity": "Gold",
+            "description": "Log a cumulative total swim distance of 5,000 meters within a single week.",
+            "icon_name": "icon_water_trident",
+            "trigger_type": "weekly_swim_distance_meters",
+            "target_value": 5000
+        },
+        {
+            "id": "amphibious_athlete",
+            "category": "general_fitness_and_hybrid",
+            "title": "Amphibious Athlete",
+            "inspired_by": "Hybrid Training Culture",
+            "rarity": "Legendary",
+            "description": "Log a heavy gym strength session AND a 1,000m swim on the same calendar day.",
+            "icon_name": "icon_barbell_and_wave",
+            "trigger_type": "same_day_gym_and_swim",
+            "min_swim_meters": 1000
+        },
+        {
+            "id": "iron_avalanche",
+            "category": "general_fitness_and_hybrid",
+            "title": "100-Ton Avalanche",
+            "inspired_by": "Lifetime Volume Metric",
+            "rarity": "Gold",
+            "description": "Accumulate 100,000 kg total volume lifted across all workouts.",
+            "icon_name": "icon_mountain_weights",
+            "trigger_type": "lifetime_lifting_volume_kg",
+            "target_value": 100000
+        },
+        {
+            "id": "iron_will_streak",
+            "category": "general_fitness_and_hybrid",
+            "title": "Iron Will",
+            "inspired_by": "Consistency Metric",
+            "rarity": "Gold",
+            "description": "Maintain a 30-day streak of logging at least 3 workouts every calendar week.",
+            "icon_name": "icon_shield_fire",
+            "trigger_type": "weekly_streak_count",
+            "target_value": 4
+        },
+        {
+            "id": "big_three_master",
+            "category": "general_fitness_and_hybrid",
+            "title": "Big Three Master",
+            "inspired_by": "Powerlifting Classic",
+            "rarity": "Silver",
+            "description": "Log Bench Press, Barbell Squat, and Deadlift all within a single workout session.",
+            "icon_name": "icon_three_stars",
+            "trigger_type": "exercise_combination",
+            "required_exercises": [
+                "Barbell Bench Press",
+                "Barbell Squat",
+                "Barbell Deadlift"
+            ]
+        },
+        {
+            "id": "dawn_patrol",
+            "category": "general_fitness_and_hybrid",
+            "title": "Dawn Patrol",
+            "inspired_by": "Early Risers",
+            "rarity": "Bronze",
+            "description": "Finish and log a workout session before 6:30 AM local time.",
+            "icon_name": "icon_sunrise_clock",
+            "trigger_type": "workout_end_time_before",
+            "target_value": "06:30"
+        }
+    ]
+}

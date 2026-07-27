@@ -10,6 +10,16 @@ router.post("/", requireAuth, async (req, res) => {
     return res.status(400).json({ error: "token is required" });
   }
 
+  // Intl throws on anything that isn't a real IANA zone name — reject it here instead of
+  // storing it and having the missed-workout cron trip over it later for every user in the batch
+  if (timezone) {
+    try {
+      Intl.DateTimeFormat("en-CA", { timeZone: timezone });
+    } catch {
+      return res.status(400).json({ error: "invalid timezone" });
+    }
+  }
+
   try {
     if (timezone) {
       await pool.query(`UPDATE users SET timezone = $1 WHERE id = $2`, [timezone, req.userId]);

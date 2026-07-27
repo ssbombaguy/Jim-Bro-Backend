@@ -7,8 +7,17 @@ const router = express.Router();
 function sanitizeSets(sets) {
   if (!Array.isArray(sets)) return [];
   return sets
-    .filter((s) => s && typeof s.exercise_name === "string" && Number.isFinite(s.weight_kg) && Number.isFinite(s.reps))
-    .map((s) => ({ exercise_name: s.exercise_name, weight_kg: s.weight_kg, reps: s.reps }));
+    .filter((s) => s && typeof s.exercise_name === "string" && Number.isFinite(s.weight_kg) && Number.isFinite(s.reps) && s.weight_kg >= 0 && s.reps > 0)
+    .map((s) => ({
+      exercise_name: s.exercise_name,
+      weight_kg: s.weight_kg,
+      reps: s.reps,
+      // carried through so a merge on another device can rebuild the exercise correctly
+      // instead of defaulting every restored exercise to plain reps
+      unit: typeof s.unit === "string" ? s.unit : undefined,
+      bodyweight: s.bodyweight ? true : undefined,
+      pool_length_m: Number.isFinite(s.pool_length_m) ? s.pool_length_m : undefined,
+    }));
 }
 
 router.post("/", requireAuth, async (req, res) => {

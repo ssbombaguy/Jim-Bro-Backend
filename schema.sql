@@ -160,3 +160,14 @@ BEGIN
     ALTER TABLE splits ADD CONSTRAINT splits_user_id_client_id_key UNIQUE (user_id, client_id);
   END IF;
 END $$;
+
+-- achievements are evaluated client-side (they depend on RPE/swim/timing data that never
+-- leaves the device); this table just persists which ones unlocked so a reinstall or second
+-- device doesn't lose them and re-trigger the unlock animation
+CREATE TABLE IF NOT EXISTS user_achievements (
+  id SERIAL PRIMARY KEY,
+  user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  achievement_id TEXT NOT NULL,
+  unlocked_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+  UNIQUE (user_id, achievement_id)
+);

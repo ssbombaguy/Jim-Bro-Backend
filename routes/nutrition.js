@@ -1,8 +1,10 @@
 const express = require("express");
 const pool = require("../db");
 const requireAuth = require("../middleware/auth");
+const { quotaLimiter } = require("../middleware/rateLimit");
 
 const router = express.Router();
+router.use(quotaLimiter);
 const SPOONACULAR_BASE = "https://api.spoonacular.com";
 
 // the key lives only here, server-side — the app never sees it, so it can't be pulled out

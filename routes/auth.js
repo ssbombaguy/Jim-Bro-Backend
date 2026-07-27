@@ -45,6 +45,16 @@ function signToken(userId) {
   return jwt.sign({ userId }, process.env.JWT_SECRET, { expiresIn: "30d" });
 }
 
+// keeps obviously-bogus numbers (negative age, a 5-digit "weight") out of the database — not
+// exhaustive medical bounds, just a sanity net the BMI/TDEE math downstream can trust
+function validateBodyStats({ age, weight, heightCm, workoutsPerWeek }) {
+  if (age != null && (age < 0 || age > 120)) return "age must be between 0 and 120";
+  if (weight != null && (weight <= 0 || weight > 500)) return "weight must be between 0 and 500 kg";
+  if (heightCm != null && (heightCm <= 0 || heightCm > 300)) return "height must be between 0 and 300 cm";
+  if (workoutsPerWeek != null && (workoutsPerWeek < 0 || workoutsPerWeek > 7)) return "workoutsPerWeek must be between 0 and 7";
+  return null;
+}
+
 router.post("/register", authLimiter, async (req, res) => {
   const {
     email,
@@ -73,6 +83,10 @@ router.post("/register", authLimiter, async (req, res) => {
   }
   if (password.length < 8) {
     return res.status(400).json({ error: "password must be at least 8 characters" });
+  }
+  const statsError = validateBodyStats({ age, weight, heightCm, workoutsPerWeek });
+  if (statsError) {
+    return res.status(400).json({ error: statsError });
   }
 
   try {
@@ -121,7 +135,7 @@ router.post("/login", authLimiter, async (req, res) => {
 
   try {
     const result = await pool.query(
-      "SELECT * FROM users WHERE email = $1",
+      `SELECT ${USER_COLUMNS}, password_hash FROM users WHERE email = $1`,
       [email.toLowerCase().trim()]
     );
     const user = result.rows[0];
@@ -176,6 +190,10 @@ router.patch("/me", requireAuth, async (req, res) => {
 
   if (!name) {
     return res.status(400).json({ error: "name is required" });
+  }
+  const statsError = validateBodyStats({ age, weight, heightCm, workoutsPerWeek });
+  if (statsError) {
+    return res.status(400).json({ error: statsError });
   }
 
   try {

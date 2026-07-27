@@ -27,6 +27,22 @@ router.post("/", requireAuth, async (req, res) => {
   }
 });
 
+// the counterpart to POST /: lets a device that doesn't have a split locally (reinstall, or
+// mergeHistory recreating one from a workout_logs row) find the original by name and reuse its
+// client_id/schedule instead of minting a disconnected duplicate
+router.get("/", requireAuth, async (req, res) => {
+  try {
+    const result = await pool.query(
+      `SELECT client_id, name, weekdays, default_time, default_end_time FROM splits WHERE user_id = $1`,
+      [req.userId]
+    );
+    res.json({ splits: result.rows });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: "internal error" });
+  }
+});
+
 router.delete("/:clientId", requireAuth, async (req, res) => {
   const { clientId } = req.params;
   if (!clientId) {

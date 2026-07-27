@@ -74,34 +74,40 @@ router.post("/check-missed-workouts", requireCronSecret, async (req, res) => {
 
     const messages = [];
     for (const split of splits) {
-      const weekdays = split.weekdays || [];
-      const { date, minutesSinceMidnight, weekday } = nowInTimezone(split.timezone || "UTC");
-      if (!weekdays.includes(weekday)) continue;
+      // one bad row (e.g. a garbage timezone string) must not take the whole batch down —
+      // every other user's reminder still has to go out
+      try {
+        const weekdays = split.weekdays || [];
+        const { date, minutesSinceMidnight, weekday } = nowInTimezone(split.timezone || "UTC");
+        if (!weekdays.includes(weekday)) continue;
 
-      const windowEnd = toMinutes(split.default_end_time || split.default_time) + GRACE_MINUTES;
-      if (minutesSinceMidnight < windowEnd) continue;
+        const windowEnd = toMinutes(split.default_end_time || split.default_time) + GRACE_MINUTES;
+        if (minutesSinceMidnight < windowEnd) continue;
 
-      const { rows: logged } = await pool.query(
-        `SELECT 1 FROM workout_logs WHERE user_id = $1 AND date = $2 AND split_name = $3`,
-        [split.user_id, date, split.name]
-      );
-      if (logged.length) continue;
+        const { rows: logged } = await pool.query(
+          `SELECT 1 FROM workout_logs WHERE user_id = $1 AND date = $2 AND split_name = $3`,
+          [split.user_id, date, split.name]
+        );
+        if (logged.length) continue;
 
-      const { rows: claimed } = await pool.query(
-        `INSERT INTO missed_workout_notifications (user_id, split_id, date)
-         VALUES ($1, $2, $3) ON CONFLICT (user_id, split_id, date) DO NOTHING RETURNING id`,
-        [split.user_id, split.split_id, date]
-      );
-      if (!claimed.length) continue; // another run already notified for this split/date
+        const { rows: claimed } = await pool.query(
+          `INSERT INTO missed_workout_notifications (user_id, split_id, date)
+           VALUES ($1, $2, $3) ON CONFLICT (user_id, split_id, date) DO NOTHING RETURNING id`,
+          [split.user_id, split.split_id, date]
+        );
+        if (!claimed.length) continue; // another run already notified for this split/date
 
-      for (const token of split.tokens) {
-        messages.push({
-          to: token,
-          sound: "default",
-          title: "Missed a workout?",
-          body: `Looks like you haven't logged ${split.name} today.`,
-          data: { type: "missed_workout", splitId: split.split_id, date },
-        });
+        for (const token of split.tokens) {
+          messages.push({
+            to: token,
+            sound: "default",
+            title: "Missed a workout?",
+            body: `Looks like you haven't logged ${split.name} today.`,
+            data: { type: "missed_workout", splitId: split.split_id, date },
+          });
+        }
+      } catch (err) {
+        console.error(`check-missed-workouts: skipping split ${split.split_id}`, err);
       }
     }
 
