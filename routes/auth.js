@@ -23,7 +23,7 @@ const authLimiter = rateLimit({
 });
 
 const USER_COLUMNS =
-  "id, email, name, age, birth_date, weight, height_cm, goal, sex, injuries, health_notes, avatar_url, workouts_per_week, forbidden_exercises, favorite_exercises, favorite_meals, preferred_weekdays, plan, created_at";
+  "id, email, name, age, birth_date, weight, height_cm, goal, sex, injuries, health_notes, avatar_url, workouts_per_week, forbidden_exercises, favorite_exercises, favorite_meals, preferred_weekdays, plan, created_at, updated_at";
 
 const AVATAR_DIR = path.join(__dirname, "..", "uploads", "avatars");
 fs.mkdirSync(AVATAR_DIR, { recursive: true });
@@ -183,7 +183,7 @@ router.patch("/me", requireAuth, async (req, res) => {
       `UPDATE users SET
         name = $1, age = $2, birth_date = $3, weight = $4, height_cm = $5, goal = $6,
         sex = $7, injuries = $8, health_notes = $9, workouts_per_week = $10, forbidden_exercises = $11,
-        favorite_exercises = $12, favorite_meals = $13, preferred_weekdays = $14
+        favorite_exercises = $12, favorite_meals = $13, preferred_weekdays = $14, updated_at = now()
        WHERE id = $15
        RETURNING ${USER_COLUMNS}`,
       [
@@ -218,7 +218,7 @@ router.post("/me/avatar", requireAuth, avatarUpload.single("avatar"), async (req
   try {
     const avatarUrl = `/uploads/avatars/${req.file.filename}`;
     const result = await pool.query(
-      `UPDATE users SET avatar_url = $1 WHERE id = $2 RETURNING ${USER_COLUMNS}`,
+      `UPDATE users SET avatar_url = $1, updated_at = now() WHERE id = $2 RETURNING ${USER_COLUMNS}`,
       [avatarUrl, req.userId]
     );
     res.json({ user: result.rows[0] });

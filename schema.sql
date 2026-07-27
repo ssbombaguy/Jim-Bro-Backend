@@ -91,6 +91,10 @@ ALTER TABLE users ADD COLUMN IF NOT EXISTS timezone TEXT NOT NULL DEFAULT 'UTC';
 ALTER TABLE users ADD COLUMN IF NOT EXISTS plan TEXT NOT NULL DEFAULT 'free';
 UPDATE users SET plan = 'premium' WHERE email = 'giorgimaisuradze2008@gmail.com';
 
+-- lets a client compare "my local edit" vs "what the server has" and pick the newer one
+-- instead of a multi-device profile edit silently overwriting whichever device syncs last
+ALTER TABLE users ADD COLUMN IF NOT EXISTS updated_at TIMESTAMPTZ NOT NULL DEFAULT now();
+
 -- one row per device; token is globally unique (not per-user) so re-registering it under a new
 -- account (device reinstall / account switch) moves ownership instead of pushing to both users
 CREATE TABLE IF NOT EXISTS push_tokens (
