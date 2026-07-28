@@ -177,3 +177,18 @@ CREATE TABLE IF NOT EXISTS user_achievements (
 -- a "didn't happen" day already upserts a workout_logs row (zero sets), which is enough on its
 -- own to stop that job from nagging about it, without the job needing to read this value
 ALTER TABLE workout_logs ADD COLUMN IF NOT EXISTS adherence TEXT;
+
+-- one row per AI coach conversation; messages stored as a JSONB blob (same "resync the whole
+-- current snapshot" approach as workout_logs.sets) rather than a separate messages table —
+-- there's no need to diff individual messages for something this low-stakes. Upserted by
+-- (user_id, client_id) same as workout_logs/splits.
+CREATE TABLE IF NOT EXISTS chat_conversations (
+  id SERIAL PRIMARY KEY,
+  user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  client_id TEXT NOT NULL,
+  title TEXT,
+  messages JSONB NOT NULL DEFAULT '[]'::jsonb,
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+  UNIQUE (user_id, client_id)
+);
+CREATE INDEX IF NOT EXISTS idx_chat_conversations_user ON chat_conversations (user_id, updated_at DESC);

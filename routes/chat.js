@@ -1,4 +1,5 @@
 const express = require("express");
+const pool = require("../db");
 const requireAuth = require("../middleware/auth");
 const { quotaLimiter } = require("../middleware/rateLimit");
 
@@ -58,6 +59,49 @@ router.post("/", requireAuth, async (req, res) => {
       return res.status(400).json({ error: `Gemini stopped early: ${candidate.finishReason}` });
     }
     res.json({ text: candidate?.content?.parts?.[0]?.text ?? "" });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: "internal error" });
+  }
+});
+
+// stored as-is (role/text pairs) — unlike sanitizeMessages above, this isn't shaped for
+// Gemini's request format, it's just what gets persisted and read back by the client
+function sanitizeStoredMessages(messages) {
+  if (!Array.isArray(messages)) return [];
+  return messages
+    .filter((m) => m && typeof m.text === "string" && (m.role === "user" || m.role === "model"))
+    .map((m) => ({ role: m.role, text: m.text }));
+}
+
+router.post("/conversations", requireAuth, async (req, res) => {
+  const { clientId, title, messages } = req.body;
+  if (!clientId) return res.status(400).json({ error: "clientId is required" });
+
+  try {
+    const result = await pool.query(
+      `INSERT INTO chat_conversations (user_id, client_id, title, messages)
+       VALUES ($1, $2, $3, $4)
+       ON CONFLICT (user_id, client_id)
+       DO UPDATE SET title = $3, messages = $4, updated_at = now()
+       RETURNING id, client_id, title, messages, updated_at`,
+      [req.userId, clientId, title ?? null, JSON.stringify(sanitizeStoredMessages(messages))]
+    );
+    res.status(201).json({ conversation: result.rows[0] });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: "internal error" });
+  }
+});
+
+router.get("/conversations", requireAuth, async (req, res) => {
+  try {
+    const result = await pool.query(
+      `SELECT id, client_id, title, messages, updated_at FROM chat_conversations
+       WHERE user_id = $1 ORDER BY updated_at DESC LIMIT 50`,
+      [req.userId]
+    );
+    res.json({ conversations: result.rows });
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: "internal error" });
