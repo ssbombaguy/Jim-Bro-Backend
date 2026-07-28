@@ -4,6 +4,12 @@ const requireAuth = require("../middleware/auth");
 
 const router = express.Router();
 
+const ADHERENCE_VALUES = new Set(["full", "partial", "none"]);
+
+function sanitizeAdherence(adherence) {
+  return ADHERENCE_VALUES.has(adherence) ? adherence : null;
+}
+
 function sanitizeSets(sets) {
   if (!Array.isArray(sets)) return [];
   return sets
@@ -21,7 +27,7 @@ function sanitizeSets(sets) {
 }
 
 router.post("/", requireAuth, async (req, res) => {
-  const { clientId, date, splitName, sets } = req.body;
+  const { clientId, date, splitName, adherence, sets } = req.body;
 
   if (!clientId || !date || !splitName) {
     return res.status(400).json({ error: "clientId, date and splitName are required" });
@@ -29,12 +35,12 @@ router.post("/", requireAuth, async (req, res) => {
 
   try {
     const result = await pool.query(
-      `INSERT INTO workout_logs (user_id, client_id, date, split_name, sets)
-       VALUES ($1, $2, $3, $4, $5)
+      `INSERT INTO workout_logs (user_id, client_id, date, split_name, adherence, sets)
+       VALUES ($1, $2, $3, $4, $5, $6)
        ON CONFLICT (user_id, client_id)
-       DO UPDATE SET date = $3, split_name = $4, sets = $5, updated_at = now()
-       RETURNING id, client_id, date, split_name, sets, updated_at`,
-      [req.userId, clientId, date, splitName, JSON.stringify(sanitizeSets(sets))]
+       DO UPDATE SET date = $3, split_name = $4, adherence = $5, sets = $6, updated_at = now()
+       RETURNING id, client_id, date, split_name, adherence, sets, updated_at`,
+      [req.userId, clientId, date, splitName, sanitizeAdherence(adherence), JSON.stringify(sanitizeSets(sets))]
     );
     res.status(201).json({ workout: result.rows[0] });
   } catch (err) {
@@ -61,7 +67,7 @@ router.delete("/:clientId", requireAuth, async (req, res) => {
 router.get("/", requireAuth, async (req, res) => {
   try {
     const result = await pool.query(
-      `SELECT id, client_id, date, split_name, sets, updated_at FROM workout_logs
+      `SELECT id, client_id, date, split_name, adherence, sets, updated_at FROM workout_logs
        WHERE user_id = $1 ORDER BY date DESC, id DESC LIMIT 100`,
       [req.userId]
     );

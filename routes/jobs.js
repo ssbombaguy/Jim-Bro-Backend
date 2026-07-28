@@ -56,10 +56,10 @@ async function sendExpoPush(messages) {
 // finds splits scheduled for "today" (per the user's own timezone) whose window+grace has
 // passed with nothing logged, and pushes a reminder — at most once per split per date.
 //
-// ponytail: "did they work out" is approximated by a workout_logs row existing for that
-// user/date/split_name, not by the session's actual adherence value (adherence never leaves
-// the device today). A user who opened the app and explicitly marked the session "skipped"
-// can still get this push. Add a synced adherence field if that false positive matters.
+// "did they work out" is approximated by a workout_logs row existing for that
+// user/date/split_name — the client now syncs a "didn't happen" answer as a real (zero-set)
+// row too, so a session explicitly marked skipped in-app already reads as logged here and
+// won't get double-nagged, without this job needing to inspect the adherence value itself.
 router.post("/check-missed-workouts", requireCronSecret, async (req, res) => {
   try {
     const { rows: splits } = await pool.query(

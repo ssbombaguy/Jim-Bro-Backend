@@ -171,3 +171,9 @@ CREATE TABLE IF NOT EXISTS user_achievements (
   unlocked_at TIMESTAMPTZ NOT NULL DEFAULT now(),
   UNIQUE (user_id, achievement_id)
 );
+
+-- the client's own "full / partial / didn't happen" answer, now synced instead of staying
+-- local-only — closes the false positive in check-missed-workouts (see ponytail note there):
+-- a "didn't happen" day already upserts a workout_logs row (zero sets), which is enough on its
+-- own to stop that job from nagging about it, without the job needing to read this value
+ALTER TABLE workout_logs ADD COLUMN IF NOT EXISTS adherence TEXT;
