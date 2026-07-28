@@ -65,13 +65,15 @@ router.post("/", requireAuth, async (req, res) => {
   }
 });
 
-// stored as-is (role/text pairs) — unlike sanitizeMessages above, this isn't shaped for
-// Gemini's request format, it's just what gets persisted and read back by the client
+// stored as-is (role/text/workout/added) — unlike sanitizeMessages above, this isn't shaped for
+// Gemini's request format, it's just what gets persisted and read back by the client. `workout`
+// (the parsed "add this to my splits" payload) and `added` ride along unvalidated — they're
+// opaque UI state to this route, not something it needs to understand.
 function sanitizeStoredMessages(messages) {
   if (!Array.isArray(messages)) return [];
   return messages
     .filter((m) => m && typeof m.text === "string" && (m.role === "user" || m.role === "model"))
-    .map((m) => ({ role: m.role, text: m.text }));
+    .map((m) => ({ role: m.role, text: m.text, workout: m.workout ?? null, added: !!m.added }));
 }
 
 router.post("/conversations", requireAuth, async (req, res) => {
