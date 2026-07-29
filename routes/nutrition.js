@@ -140,9 +140,19 @@ function toSpoonacularShape(row) {
 
 router.get("/recipes/search", requireAuth, async (req, res) => {
   const query = req.query.query;
-  const local = query
-    ? (await pool.query("SELECT * FROM local_recipes WHERE title ILIKE $1 ORDER BY title", [`%${query}%`])).rows
-    : [];
+  const offset = Number(req.query.offset) || 0;
+
+  // only on the first page — otherwise these would repeat on every "load more"
+  let local = [];
+  if (offset === 0) {
+    if (query) {
+      local = (await pool.query("SELECT * FROM local_recipes WHERE title ILIKE $1 ORDER BY title", [`%${query}%`])).rows;
+    } else if (req.query.type) {
+      // no search text yet — matches by category tab so these surface in default browsing
+      // too, not just when someone already knows to search for a dish by name
+      local = (await pool.query("SELECT * FROM local_recipes WHERE type = $1 ORDER BY title LIMIT 5", [req.query.type])).rows;
+    }
+  }
 
   const apiKey = requireApiKey(res);
   if (!apiKey) return;

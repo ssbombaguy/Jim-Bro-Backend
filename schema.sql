@@ -211,19 +211,24 @@ CREATE TABLE IF NOT EXISTS local_recipes (
   instructions TEXT
 );
 
-INSERT INTO local_recipes (title, servings, calories, protein_g, carbs_g, fat_g, ingredients, instructions) VALUES
-  ('Khachapuri Imeruli', 4, 800, 28, 70, 46, 'Flour, yeast, milk, imeruli cheese, egg', 'Fill dough with cheese, fold and bake until golden.'),
-  ('Khinkali (per piece)', 1, 55, 2.5, 6, 2, 'Flour, beef/pork mince, onion, broth, spices', 'Fold pleated dumplings around spiced meat broth filling, boil until they float.'),
-  ('Lobio', 2, 250, 12, 30, 9, 'Kidney beans, walnuts, onion, coriander, spices', 'Simmer beans with sauteed onion and spices, stir in crushed walnuts.'),
-  ('Mtsvadi', 2, 300, 26, 2, 20, 'Pork or beef, onion, salt, pepper', 'Marinate cubed meat, skewer and grill over open coals.'),
-  ('Churchkhela (per piece)', 1, 120, 2, 18, 5, 'Grape juice (tatara), walnuts, flour', 'Dip walnut strings repeatedly in thickened grape juice, hang to dry.'),
-  ('Pkhali', 2, 150, 6, 12, 9, 'Spinach or beets, walnuts, garlic, vinegar', 'Blend cooked vegetable with walnuts, garlic and vinegar into a paste.'),
-  ('Chakhokhbili', 2, 280, 24, 10, 15, 'Chicken, tomato, onion, herbs', 'Stew chicken pieces with tomato, onion and fresh herbs.'),
-  ('Kharcho', 2, 320, 18, 28, 14, 'Beef, rice, walnuts, tomato, tkemali, garlic', 'Simmer beef broth with rice, walnuts and tomato until thick.'),
-  ('Badrijani Nigvzit', 2, 220, 6, 14, 16, 'Eggplant, walnuts, garlic, vinegar', 'Fry eggplant slices, spread with walnut-garlic paste and roll.'),
-  ('Satsivi', 2, 350, 22, 8, 26, 'Chicken, walnuts, garlic, spices', 'Poach chicken, coat in a cold walnut and garlic sauce.'),
-  ('Shkmeruli', 2, 450, 30, 4, 34, 'Chicken, milk or cream, garlic', 'Pan-fry flattened chicken, simmer in garlic cream sauce.')
-ON CONFLICT (title) DO NOTHING;
+-- matches FoodBrowser.FOOD_TYPES on the client (breakfast/main course/snack/dessert/drink) so
+-- these show up in the default category tabs, not just when someone already knows to search
+-- for a dish by name
+ALTER TABLE local_recipes ADD COLUMN IF NOT EXISTS type TEXT NOT NULL DEFAULT 'main course';
+
+INSERT INTO local_recipes (title, type, servings, calories, protein_g, carbs_g, fat_g, ingredients, instructions) VALUES
+  ('Khachapuri Imeruli', 'main course', 4, 800, 28, 70, 46, 'Flour, yeast, milk, imeruli cheese, egg', 'Fill dough with cheese, fold and bake until golden.'),
+  ('Khinkali (per piece)', 'main course', 1, 55, 2.5, 6, 2, 'Flour, beef/pork mince, onion, broth, spices', 'Fold pleated dumplings around spiced meat broth filling, boil until they float.'),
+  ('Lobio', 'main course', 2, 250, 12, 30, 9, 'Kidney beans, walnuts, onion, coriander, spices', 'Simmer beans with sauteed onion and spices, stir in crushed walnuts.'),
+  ('Mtsvadi', 'main course', 2, 300, 26, 2, 20, 'Pork or beef, onion, salt, pepper', 'Marinate cubed meat, skewer and grill over open coals.'),
+  ('Churchkhela (per piece)', 'dessert', 1, 120, 2, 18, 5, 'Grape juice (tatara), walnuts, flour', 'Dip walnut strings repeatedly in thickened grape juice, hang to dry.'),
+  ('Pkhali', 'snack', 2, 150, 6, 12, 9, 'Spinach or beets, walnuts, garlic, vinegar', 'Blend cooked vegetable with walnuts, garlic and vinegar into a paste.'),
+  ('Chakhokhbili', 'main course', 2, 280, 24, 10, 15, 'Chicken, tomato, onion, herbs', 'Stew chicken pieces with tomato, onion and fresh herbs.'),
+  ('Kharcho', 'main course', 2, 320, 18, 28, 14, 'Beef, rice, walnuts, tomato, tkemali, garlic', 'Simmer beef broth with rice, walnuts and tomato until thick.'),
+  ('Badrijani Nigvzit', 'snack', 2, 220, 6, 14, 16, 'Eggplant, walnuts, garlic, vinegar', 'Fry eggplant slices, spread with walnut-garlic paste and roll.'),
+  ('Satsivi', 'main course', 2, 350, 22, 8, 26, 'Chicken, walnuts, garlic, spices', 'Poach chicken, coat in a cold walnut and garlic sauce.'),
+  ('Shkmeruli', 'main course', 2, 450, 30, 4, 34, 'Chicken, milk or cream, garlic', 'Pan-fry flattened chicken, simmer in garlic cream sauce.')
+ON CONFLICT (title) DO UPDATE SET type = EXCLUDED.type;
 
 -- per-user, per-feature, per-calendar-month call count, so free users get a limited number of
 -- premium-gated calls (see middleware/requirePremium.js) instead of a hard paywall on first use
