@@ -192,3 +192,45 @@ CREATE TABLE IF NOT EXISTS chat_conversations (
   UNIQUE (user_id, client_id)
 );
 CREATE INDEX IF NOT EXISTS idx_chat_conversations_user ON chat_conversations (user_id, updated_at DESC);
+
+-- Spoonacular's recipe database is US/UK-centric and returns nothing for Georgian dishes, so
+-- /nutrition/recipes/search checks this table first (by title ILIKE) and prepends matches ahead
+-- of Spoonacular's results instead of switching food-API providers, which wouldn't fix the gap.
+-- Nutrition values below are rough per-serving estimates from public sources, NOT lab-verified —
+-- replace with measured values before relying on them for anything beyond a rough calorie count.
+CREATE TABLE IF NOT EXISTS local_recipes (
+  id SERIAL PRIMARY KEY,
+  title TEXT NOT NULL UNIQUE,
+  image_url TEXT,
+  servings INTEGER NOT NULL DEFAULT 1,
+  calories INTEGER,
+  protein_g NUMERIC,
+  carbs_g NUMERIC,
+  fat_g NUMERIC,
+  ingredients TEXT,
+  instructions TEXT
+);
+
+INSERT INTO local_recipes (title, servings, calories, protein_g, carbs_g, fat_g, ingredients, instructions) VALUES
+  ('Khachapuri Imeruli', 4, 800, 28, 70, 46, 'Flour, yeast, milk, imeruli cheese, egg', 'Fill dough with cheese, fold and bake until golden.'),
+  ('Khinkali (per piece)', 1, 55, 2.5, 6, 2, 'Flour, beef/pork mince, onion, broth, spices', 'Fold pleated dumplings around spiced meat broth filling, boil until they float.'),
+  ('Lobio', 2, 250, 12, 30, 9, 'Kidney beans, walnuts, onion, coriander, spices', 'Simmer beans with sauteed onion and spices, stir in crushed walnuts.'),
+  ('Mtsvadi', 2, 300, 26, 2, 20, 'Pork or beef, onion, salt, pepper', 'Marinate cubed meat, skewer and grill over open coals.'),
+  ('Churchkhela (per piece)', 1, 120, 2, 18, 5, 'Grape juice (tatara), walnuts, flour', 'Dip walnut strings repeatedly in thickened grape juice, hang to dry.'),
+  ('Pkhali', 2, 150, 6, 12, 9, 'Spinach or beets, walnuts, garlic, vinegar', 'Blend cooked vegetable with walnuts, garlic and vinegar into a paste.'),
+  ('Chakhokhbili', 2, 280, 24, 10, 15, 'Chicken, tomato, onion, herbs', 'Stew chicken pieces with tomato, onion and fresh herbs.'),
+  ('Kharcho', 2, 320, 18, 28, 14, 'Beef, rice, walnuts, tomato, tkemali, garlic', 'Simmer beef broth with rice, walnuts and tomato until thick.'),
+  ('Badrijani Nigvzit', 2, 220, 6, 14, 16, 'Eggplant, walnuts, garlic, vinegar', 'Fry eggplant slices, spread with walnut-garlic paste and roll.'),
+  ('Satsivi', 2, 350, 22, 8, 26, 'Chicken, walnuts, garlic, spices', 'Poach chicken, coat in a cold walnut and garlic sauce.'),
+  ('Shkmeruli', 2, 450, 30, 4, 34, 'Chicken, milk or cream, garlic', 'Pan-fry flattened chicken, simmer in garlic cream sauce.')
+ON CONFLICT (title) DO NOTHING;
+
+-- per-user, per-feature, per-calendar-month call count, so free users get a limited number of
+-- premium-gated calls (see middleware/requirePremium.js) instead of a hard paywall on first use
+CREATE TABLE IF NOT EXISTS feature_usage (
+  user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  feature TEXT NOT NULL,
+  period_start DATE NOT NULL,
+  count INTEGER NOT NULL DEFAULT 0,
+  PRIMARY KEY (user_id, feature, period_start)
+);

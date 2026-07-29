@@ -1,6 +1,7 @@
 const express = require("express");
 const pool = require("../db");
 const requireAuth = require("../middleware/auth");
+const requirePremium = require("../middleware/requirePremium");
 const { quotaLimiter } = require("../middleware/rateLimit");
 
 const router = express.Router();
@@ -28,7 +29,7 @@ function sanitizeMessages(messages) {
     .map((m) => ({ role: m.role, parts: [{ text: m.text }] }));
 }
 
-router.post("/", requireAuth, async (req, res) => {
+router.post("/", requireAuth, requirePremium("chat"), async (req, res) => {
   const apiKey = requireApiKey(res);
   if (!apiKey) return;
 
