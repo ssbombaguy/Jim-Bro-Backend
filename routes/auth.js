@@ -2,8 +2,7 @@ const express = require("express");
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
 const multer = require("multer");
-const path = require("path");
-const fs = require("fs");
+const cloudinary = require("cloudinary").v2;
 const rateLimit = require("express-rate-limit");
 const pool = require("../db");
 const requireAuth = require("../middleware/auth");
@@ -25,21 +24,24 @@ const authLimiter = rateLimit({
 const USER_COLUMNS =
   "id, email, name, age, birth_date, weight, height_cm, goal, sex, injuries, health_notes, avatar_url, workouts_per_week, forbidden_exercises, favorite_exercises, favorite_meals, preferred_weekdays, plan, created_at, updated_at";
 
-const AVATAR_DIR = path.join(__dirname, "..", "uploads", "avatars");
-fs.mkdirSync(AVATAR_DIR, { recursive: true });
+const AVATAR_MIME_TYPES = new Set(["image/jpeg", "image/png", "image/webp"]);
 
-const AVATAR_MIME_EXT = { "image/jpeg": ".jpg", "image/png": ".png", "image/webp": ".webp" };
-
+// buffered in memory, then streamed straight to Cloudinary — nothing touches local disk
 const avatarUpload = multer({
-  storage: multer.diskStorage({
-    destination: AVATAR_DIR,
-    // extension comes from the validated mimetype, never the client-supplied
-    // filename, so an attacker can't smuggle a .html/.svg file onto the server
-    filename: (req, file, cb) => cb(null, `${req.userId}-${Date.now()}${AVATAR_MIME_EXT[file.mimetype]}`),
-  }),
+  storage: multer.memoryStorage(),
   limits: { fileSize: 5 * 1024 * 1024 },
-  fileFilter: (req, file, cb) => cb(null, file.mimetype in AVATAR_MIME_EXT),
+  fileFilter: (req, file, cb) => cb(null, AVATAR_MIME_TYPES.has(file.mimetype)),
 });
+
+function uploadAvatarToCloudinary(userId, buffer) {
+  return new Promise((resolve, reject) => {
+    const stream = cloudinary.uploader.upload_stream(
+      { folder: "avatars", public_id: String(userId), overwrite: true, resource_type: "image" },
+      (err, result) => (err ? reject(err) : resolve(result))
+    );
+    stream.end(buffer);
+  });
+}
 
 function signToken(userId) {
   return jwt.sign({ userId }, process.env.JWT_SECRET, { expiresIn: "30d" });
@@ -234,7 +236,8 @@ router.post("/me/avatar", requireAuth, avatarUpload.single("avatar"), async (req
   if (!req.file) return res.status(400).json({ error: "avatar file is required" });
 
   try {
-    const avatarUrl = `/uploads/avatars/${req.file.filename}`;
+    const uploadResult = await uploadAvatarToCloudinary(req.userId, req.file.buffer);
+    const avatarUrl = uploadResult.secure_url;
     const result = await pool.query(
       `UPDATE users SET avatar_url = $1, updated_at = now() WHERE id = $2 RETURNING ${USER_COLUMNS}`,
       [avatarUrl, req.userId]

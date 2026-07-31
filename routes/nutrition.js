@@ -2,10 +2,9 @@ const express = require("express");
 const pool = require("../db");
 const requireAuth = require("../middleware/auth");
 const requirePremium = require("../middleware/requirePremium");
-const { quotaLimiter } = require("../middleware/rateLimit");
+const { quotaLimiter, lookupLimiter } = require("../middleware/rateLimit");
 
 const router = express.Router();
-router.use(quotaLimiter);
 const SPOONACULAR_BASE = "https://api.spoonacular.com";
 
 // the key lives only here, server-side — the app never sees it, so it can't be pulled out
@@ -96,7 +95,7 @@ async function geminiJson(apiKey, prompt, image) {
 // client shows this as an editable draft before it's ever written to daily_log (see
 // useLogFood): a vision-model portion-size guess can be off by a lot, so it's a starting
 // point to correct, never a silent write.
-router.post("/estimate", requireAuth, requirePremium("meal-estimate"), async (req, res) => {
+router.post("/estimate", requireAuth, quotaLimiter, requirePremium("meal-estimate"), async (req, res) => {
   const apiKey = requireGeminiKey(res);
   if (!apiKey) return;
   const { text, image } = req.body;
@@ -128,7 +127,7 @@ router.post("/estimate", requireAuth, requirePremium("meal-estimate"), async (re
 // what Gemini can actually see plus a few dish ideas out. Freeform suggestions only (not
 // matched against the recipe catalog/local_recipes) — deliberately simple, no "add to plan"
 // action, just ideas to act on yourself
-router.post("/analyze-fridge", requireAuth, requirePremium("fridge-analyze"), async (req, res) => {
+router.post("/analyze-fridge", requireAuth, quotaLimiter, requirePremium("fridge-analyze"), async (req, res) => {
   const apiKey = requireGeminiKey(res);
   if (!apiKey) return;
   const { image } = req.body;
@@ -176,7 +175,7 @@ function extractUsdaNutrients(foodNutrients) {
 
 // plain-ingredient lookup ("chicken breast", "banana") — Spoonacular's endpoints above are
 // recipe/meal-plan focused and don't cover this. Free USDA government database, no paid tier.
-router.get("/foods/search", requireAuth, async (req, res) => {
+router.get("/foods/search", requireAuth, lookupLimiter, async (req, res) => {
   const apiKey = requireUsdaKey(res);
   if (!apiKey) return;
   if (!req.query.query) return res.status(400).json({ error: "query is required" });
@@ -207,7 +206,7 @@ router.get("/foods/search", requireAuth, async (req, res) => {
 
 // packaged/branded product lookup by barcode — Open Food Facts is free, crowd-sourced, no
 // API key, and covers local Georgian packaged products far better than any commercial DB
-router.get("/foods/barcode/:code", requireAuth, async (req, res) => {
+router.get("/foods/barcode/:code", requireAuth, lookupLimiter, async (req, res) => {
   try {
     const offRes = await fetch(`https://world.openfoodfacts.org/api/v2/product/${req.params.code}.json`);
     if (!offRes.ok) return res.status(502).json({ error: "Open Food Facts request failed" });
@@ -231,7 +230,7 @@ router.get("/foods/barcode/:code", requireAuth, async (req, res) => {
   }
 });
 
-router.get("/meal-plan", requireAuth, requirePremium("meal-plan"), async (req, res) => {
+router.get("/meal-plan", requireAuth, quotaLimiter, requirePremium("meal-plan"), async (req, res) => {
   const apiKey = requireApiKey(res);
   if (!apiKey) return;
   try {
@@ -281,7 +280,7 @@ function toSpoonacularShape(row) {
   };
 }
 
-router.get("/recipes/search", requireAuth, async (req, res) => {
+router.get("/recipes/search", requireAuth, quotaLimiter, async (req, res) => {
   const query = req.query.query;
   const offset = Number(req.query.offset) || 0;
 
@@ -330,7 +329,7 @@ router.get("/recipes/search", requireAuth, async (req, res) => {
   }
 });
 
-router.get("/recipes/:id", requireAuth, async (req, res) => {
+router.get("/recipes/:id", requireAuth, quotaLimiter, async (req, res) => {
   if (req.params.id.startsWith("local-")) {
     const result = await pool.query("SELECT * FROM local_recipes WHERE id = $1", [req.params.id.slice(6)]);
     if (!result.rows[0]) return res.status(404).json({ error: "not found" });
