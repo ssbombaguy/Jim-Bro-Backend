@@ -127,4 +127,19 @@ router.get("/conversations", requireAuth, async (req, res) => {
   }
 });
 
+// same shape as DELETE /splits/:clientId and /workouts/:clientId — scoped to user_id so one
+// account can't delete another's conversation by guessing its client id
+router.delete("/conversations/:clientId", requireAuth, async (req, res) => {
+  const { clientId } = req.params;
+  if (!clientId) return res.status(400).json({ error: "clientId is required" });
+
+  try {
+    await pool.query(`DELETE FROM chat_conversations WHERE user_id = $1 AND client_id = $2`, [req.userId, clientId]);
+    res.status(204).end();
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: "internal error" });
+  }
+});
+
 module.exports = router;
