@@ -59,7 +59,11 @@ router.post("/", requireAuth, requirePremium("chat"), async (req, res) => {
       body: JSON.stringify(body),
     });
     const data = await r.json().catch(() => ({}));
-    if (!r.ok) return res.status(502).json({ error: data.error?.message || `Gemini request failed (${r.status})` });
+    // forward Gemini's real status (503 overloaded, 429 its own rate limit, 400 blocked, ...)
+    // instead of collapsing everything to 502 — the client retries transient ones (429/5xx)
+    // automatically and only surfaces an error for the rest, but it can't tell those apart
+    // once every upstream failure looks identical.
+    if (!r.ok) return res.status(r.status || 502).json({ error: data.error?.message || `Gemini request failed (${r.status})` });
     if (data.promptFeedback?.blockReason) {
       return res.status(400).json({ error: `Gemini blocked this request: ${data.promptFeedback.blockReason}` });
     }
