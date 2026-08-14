@@ -38,10 +38,18 @@ router.post("/", requireAuth, requirePremium("chat"), async (req, res) => {
 
   // built client-side from the user's own profile/training log (same data the plan-generation
   // prompt already sends to Gemini) so this route stays a dumb proxy — it doesn't need to know
-  // what a "split" or "profile" is, just forwards whatever persona/context the app hands it
-  const system = typeof req.body.system === "string" ? req.body.system.slice(0, 4000) : "";
+  // what a "split" or "profile" is, just forwards whatever persona/context the app hands it.
+  // Cap is generous, not tight: the client can legitimately append its full exercise-name
+  // grounding list (up to 10 body parts x ~60 names each) plus profile/injury/history context,
+  // which alone can run past 15-20k characters — the old 4000 cap silently truncated that list
+  // (and whatever came after it, including forbidden-exercise/injury data) before Gemini ever
+  // saw it. Still bounded so a crafted request can't push an unbounded bill through this route.
+  const system = typeof req.body.system === "string" ? req.body.system.slice(0, 30000) : "";
 
-  const body = { contents };
+  // lower than Gemini's default (~1.0) — this reply is grounded in a supplied exercise list
+  // (see chat-modal.jsx's buildSystemPrompt) and needs to copy names from it verbatim, not
+  // creatively rephrase them; still well above near-zero so replies don't read as robotic
+  const body = { contents, generationConfig: { temperature: 0.4 } };
   if (system) body.systemInstruction = { parts: [{ text: system }] };
 
   try {
