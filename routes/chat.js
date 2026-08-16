@@ -2,10 +2,12 @@ const express = require("express");
 const pool = require("../db");
 const requireAuth = require("../middleware/auth");
 const requirePremium = require("../middleware/requirePremium");
-const { quotaLimiter } = require("../middleware/rateLimit");
+const { quotaLimiter, lookupLimiter } = require("../middleware/rateLimit");
 
 const router = express.Router();
-router.use(quotaLimiter);
+// no router.use(quotaLimiter) here — the Gemini budget belongs to the one route that spends
+// it (see rateLimit.js). The conversation-sync CRUD below is plain Postgres, rate-limited
+// per-route by the loose anti-abuse limiter instead.
 
 // same model the client already uses for plan generation (gemini.js) — a rolling alias avoids
 // hardcoding a version Google later retires
@@ -29,7 +31,7 @@ function sanitizeMessages(messages) {
     .map((m) => ({ role: m.role, parts: [{ text: m.text }] }));
 }
 
-router.post("/", requireAuth, requirePremium("chat"), async (req, res) => {
+router.post("/", requireAuth, quotaLimiter, requirePremium("chat"), async (req, res) => {
   const apiKey = requireApiKey(res);
   if (!apiKey) return;
 
@@ -93,7 +95,7 @@ function sanitizeStoredMessages(messages) {
     .map((m) => ({ role: m.role, text: m.text, workout: m.workout ?? null, added: !!m.added, candidates: m.candidates ?? null }));
 }
 
-router.post("/conversations", requireAuth, async (req, res) => {
+router.post("/conversations", requireAuth, lookupLimiter, async (req, res) => {
   const { clientId, title, messages } = req.body;
   if (!clientId) return res.status(400).json({ error: "clientId is required" });
 
@@ -113,7 +115,7 @@ router.post("/conversations", requireAuth, async (req, res) => {
   }
 });
 
-router.get("/conversations", requireAuth, async (req, res) => {
+router.get("/conversations", requireAuth, lookupLimiter, async (req, res) => {
   try {
     const result = await pool.query(
       `SELECT id, client_id, title, messages, updated_at FROM chat_conversations
@@ -129,7 +131,7 @@ router.get("/conversations", requireAuth, async (req, res) => {
 
 // same shape as DELETE /splits/:clientId and /workouts/:clientId — scoped to user_id so one
 // account can't delete another's conversation by guessing its client id
-router.delete("/conversations/:clientId", requireAuth, async (req, res) => {
+router.delete("/conversations/:clientId", requireAuth, lookupLimiter, async (req, res) => {
   const { clientId } = req.params;
   if (!clientId) return res.status(400).json({ error: "clientId is required" });
 
