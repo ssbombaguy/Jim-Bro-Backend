@@ -9,10 +9,38 @@ const router = express.Router();
 // it (see rateLimit.js). The conversation-sync CRUD below is plain Postgres, rate-limited
 // per-route by the loose anti-abuse limiter instead.
 
-// same model the client already uses for plan generation (gemini.js) — a rolling alias avoids
-// hardcoding a version Google later retires
+// rolling aliases avoid hardcoding a version Google later retires. The fallback exists for
+// Google-side congestion: "this model is experiencing high demand" 503s are per-model
+// capacity shedding (free-tier keys get shed first), and the lite tier runs on separate
+// capacity that's rarely congested at the same moment — a slightly simpler reply beats
+// surfacing an error to the user every time.
 const MODEL = "gemini-flash-latest";
-const BASE_URL = `https://generativelanguage.googleapis.com/v1beta/models/${MODEL}:generateContent`;
+const FALLBACK_MODEL = "gemini-flash-lite-latest";
+const geminiUrl = (model) => `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`;
+
+async function callGemini(model, apiKey, body) {
+  const r = await fetch(`${geminiUrl(model)}?key=${apiKey}`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(body),
+  });
+  const data = await r.json().catch(() => ({}));
+  return { r, data };
+}
+
+const isOverloaded = (r) => r.status === 429 || r.status === 503;
+
+// primary → brief pause → primary again → lite fallback. Kept server-side so both consumers
+// of this proxy (and the /ai routes) heal identically without each client reimplementing it.
+async function callGeminiResilient(apiKey, body) {
+  let attempt = await callGemini(MODEL, apiKey, body);
+  if (isOverloaded(attempt.r)) {
+    await new Promise((resolve) => setTimeout(resolve, 1200));
+    attempt = await callGemini(MODEL, apiKey, body);
+  }
+  if (isOverloaded(attempt.r)) attempt = await callGemini(FALLBACK_MODEL, apiKey, body);
+  return attempt;
+}
 
 // the key lives only here, server-side — the chat feature is the one place a user could type
 // arbitrary text and pull the key out via a crafted prompt/response, so unlike the plan-
@@ -58,12 +86,7 @@ router.post("/", requireAuth, quotaLimiter, requirePremium("chat"), async (req, 
   if (system) body.systemInstruction = { parts: [{ text: system }] };
 
   try {
-    const r = await fetch(`${BASE_URL}?key=${apiKey}`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(body),
-    });
-    const data = await r.json().catch(() => ({}));
+    const { r, data } = await callGeminiResilient(apiKey, body);
     // forward Gemini's real status (503 overloaded, 429 its own rate limit, 400 blocked, ...)
     // instead of collapsing everything to 502 — the client retries transient ones (429/5xx)
     // automatically and only surfaces an error for the rest, but it can't tell those apart
