@@ -20,9 +20,7 @@ const anonLimiter = rateLimit({
 });
 router.use(anonLimiter);
 
-// same rolling alias as routes/chat.js — avoids hardcoding a version Google later retires
-const MODEL = "gemini-flash-latest";
-const BASE_URL = `https://generativelanguage.googleapis.com/v1beta/models/${MODEL}:generateContent`;
+const { callGeminiResilient } = require("../gemini");
 
 // the app's three UI languages — anything else falls back to English rather than letting a
 // crafted "language" value inject free text into the prompt
@@ -39,12 +37,7 @@ async function proxyGemini(res, parts, generationConfig) {
   const key = process.env.GEMINI_API_KEY;
   if (!key) return res.status(500).json({ error: "Gemini API key not configured on the server" });
   try {
-    const r = await fetch(`${BASE_URL}?key=${key}`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ contents: [{ parts }], generationConfig }),
-    });
-    const data = await r.json().catch(() => ({}));
+    const { r, data } = await callGeminiResilient(key, { contents: [{ parts }], generationConfig });
     if (!r.ok) return res.status(r.status || 502).json({ error: data.error?.message || `Gemini request failed (${r.status})` });
     if (data.promptFeedback?.blockReason) {
       return res.status(400).json({ error: `Gemini blocked this request: ${data.promptFeedback.blockReason}` });
